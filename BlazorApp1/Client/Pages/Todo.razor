@@ -1,0 +1,143 @@
+﻿@page "/todo"
+@inject HttpClient client
+@inject IJSRuntime js
+
+<h3>Todo Lists</h3>
+<small>Add as many To do as you wish.</small>
+
+
+@if (todos == null)
+{
+    <text>Loading...</text>
+}
+else if (todos.Length == 0)
+{
+    <text>No Records Found.</text>
+}
+else
+{
+    <h2 class="text-center" style="font-size: 24px;">To Do (@todos.Count(item => !item.IsDone))</h2>
+    <table class="table table-striped" style="width: 100%;">
+        <thead class="table-dark">
+            <tr>
+                <th scope="col" style="background-color: #0052cc; color: #fff;">Title</th>
+                <th scope="col" style="background-color: #0052cc; color: #fff;">Description</th>
+                <th scope="col" style="background-color: #0052cc; color: #fff;">Is Done</th>
+                <th scope="col" style="background-color: #0052cc; color: #fff;">Added Time</th>
+                <th scope="col" style="background-color: #0052cc; color: #fff;">Completion Time</th>
+                <th scope="col" style="background-color: #0052cc; color: #fff;"></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in todos)
+            {
+                <tr>
+                    <td>
+                        <div style="@(item.IsDone ? "text-decoration: line-through; color: #ccc;" : "color: red;")" class="title-cell">
+                            @item.Title
+                        </div>
+                    </td>
+                    <td>
+                        <div class="title-cell">
+                            @item.Description
+                        </div>
+                    </td>
+                    <td>
+                        <input type="checkbox" @bind="@item.IsDone" @onclick="() => ToggleCompletion(item)" />
+                    </td>
+                    <td>@item.AddedTime</td>
+                    <td class="fixed-size-cell">
+                        @item.CompletionTime
+                    </td>
+                    <td>
+                        <button class="btn btn-danger" @onclick="@(() => Delete(item.Id))">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+@if (!showAddTodo)
+{
+    <div class="text-right">
+        <button class="btn btn-success" @onclick="ShowAddTodoForm" style="background-color: #46a546; border-color: #46a546;">
+            Add todo
+        </button>
+    </div>
+}
+else
+{
+    <div class="row mt-2">
+        <div class="col">
+            <input class="form-control" placeholder="Type something todo" @bind="newTodo" style="border: 1px solid #d6d6d6; border-radius: 4px; padding: 10px;" />
+        </div>
+        <div class="col">
+            <input class="form-control" placeholder="Description" @bind="newTodoDescription" style="border: 1px solid #d6d6d6; border-radius: 4px; padding: 10px;" /> <!-- Добавляем поле ввода для описания -->
+        </div>
+        <div class="col text-right">
+            <button class="btn btn-success" @onclick="AddTodo" style="background-color: #46a546; border-color: #46a546;">
+                Add todo
+            </button>
+        </div>
+    </div>
+}
+
+
+@code {
+    string newTodoDescription;
+    TodoItem[] todos { get; set; }
+    private string newTodo;
+    bool showAddTodo = false;
+
+    private void ShowAddTodoForm()
+    {
+        showAddTodo = true;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshData();
+    }
+
+    private async Task RefreshData()
+    {
+        todos = await client.GetFromJsonAsync<TodoItem[]>("api/todoItem");
+    }
+
+    private async Task AddTodo()
+    {
+        if (!string.IsNullOrWhiteSpace(newTodo))
+        {
+            var todoItem = new TodoItem { Title = newTodo, Description = newTodoDescription, IsDone = false, AddedTime = DateTime.Now };
+            await client.PostAsJsonAsync("api/todoItem", todoItem);
+            newTodo = string.Empty;
+            newTodoDescription = string.Empty;
+            showAddTodo = false; // Hide the add todo form after adding the todo
+            await RefreshData();
+        }
+    }
+
+    private async Task ToggleCompletion(TodoItem item)
+    {
+        item.IsDone = !item.IsDone;
+        if (item.IsDone)
+        {
+            item.CompletionTime = DateTime.Now;
+        }
+        else
+        {
+            item.CompletionTime = null;
+        }
+        await client.PutAsJsonAsync($"api/todoItem", item);
+    }
+
+    private async Task Delete(int todoId)
+    {
+        var todo = todos.First(x => x.Id == todoId);
+        if (await js.InvokeAsync<bool>("confirm", $"Do you want to delete ({todo.Id}) Record?"))
+        {
+            await client.DeleteAsync($"api/todoItem/{todoId}");
+            await RefreshData();
+        }
+    }
+}
