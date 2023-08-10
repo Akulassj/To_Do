@@ -1,0 +1,36 @@
+﻿<div class="row mt-2">
+    <div class="col">
+        <input class="form-control" placeholder="Type something todo" @bind="newTodo" style="border: 1px solid #d6d6d6; border-radius: 4px; padding: 10px;" />
+    </div>
+    <div class="col">
+        <input class="form-control" placeholder="Description" @bind="newTodoDescription" style="border: 1px solid #d6d6d6; border-radius: 4px; padding: 10px;" />
+    </div>
+    <div class="col text-right">
+        <button class="btn btn-success" @onclick="AddTodo" style="background-color: #46a546; border-color: #46a546;">
+            Add todo
+        </button>
+    </div>
+</div>
+
+@code {
+    string newTodo;
+    string newTodoDescription;
+
+    [Parameter]
+    public EventCallback<(string title, string description)> OnAddTodo { get; set; }
+
+    [Parameter]
+    public EventCallback OnFormSubmitted { get; set; }
+
+    private async Task AddTodo()
+    {
+        if (!string.IsNullOrWhiteSpace(newTodo))
+        {
+            await OnAddTodo.InvokeAsync((newTodo, newTodoDescription));
+            newTodo = string.Empty;
+            newTodoDescription = string.Empty;
+
+            await OnFormSubmitted.InvokeAsync();
+        }
+    }
+}

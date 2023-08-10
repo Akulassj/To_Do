@@ -1,0 +1,189 @@
+﻿<!-- SortableTable.razor -->
+@inject HttpClient client
+@inject IJSRuntime js
+
+<table class="table table-striped table-bordered" style="width: 100%;">
+    <thead class="table-dark table-bordered">
+        <tr>
+
+            @foreach (var header in ColumnHeaders)
+            {
+                <th>
+                    <SortableTableHeader Column="@header" SortColumnChanged="SortColumnChanged" SortDirectionChanged="SortDirectionChanged">
+                        @header
+                    </SortableTableHeader>
+                </th>
+            }
+        </tr>
+    </thead>
+    <tbody>
+        @if (SortedTodos != null)
+        {
+            @foreach (var item in SortedTodos)
+            {
+                <tr>
+                    <td>
+                        <div style="@(item.IsDone ? "text-decoration: line-through; color: #ccc;" : "color: red;")" class="title-cell">
+                            @item.Title
+                        </div>
+                    </td>
+                    <td>@item.Description</td>
+                    <td>
+                        <input type="checkbox" @bind="item.IsDone" @onclick="() => ToggleCompletionHandler(item)" />
+                    </td>
+                    <td>@item.AddedTime</td>
+                    <td class="fixed-size-cell">@item.CompletionTime</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm" @onclick="() => DeleteHandler(item.Id)">Delete</button>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+@if (!showAddTodo)
+{
+    <div class="text-right">
+        <button class="btn btn-success" @onclick="ShowAddTodoForm" style="background-color: #46a546; border-color: #46a546;">
+            Add todo
+        </button>
+    </div>
+}
+else
+{
+    <AddTodoForm OnAddTodo="AddTodoHandler" OnFormSubmitted="HideAddTodoForm" />
+}
+
+@code {
+    string newTodo;
+    string newTodoDescription;
+    bool showAddTodo = false;
+    private string sortColumn = "";
+    [Parameter]
+    public TodoItem[] Todos { get; set; }
+
+    [Parameter]
+    public string SortColumn { get; set; }
+
+    [Parameter]
+    public string SortDirection { get; set; }
+
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+
+    private TodoItem[] SortedTodos;
+
+    [Parameter]
+    public Func<(string title, string description), Task> AddTodoCallback { get; set; }
+
+    [Parameter]
+    public Func<int, Task> DeleteTodoCallback { get; set; }
+
+    [Parameter]
+    public Func<TodoItem, Task> ToggleCompletionCallback { get; set; }
+    [Parameter]
+    public string[] ColumnHeaders { get; set; }
+
+    private void SortColumnChanged(string column)
+    {
+        SortColumn = column;
+        SortTodos();
+    }
+
+    private void SortDirectionChanged(string direction)
+    {
+        SortDirection = direction;
+        SortTodos();
+    }
+    protected override void OnParametersSet()
+    {
+        SortTodos();
+        base.OnParametersSet();
+    }
+
+    private void SortByColumn(string column)
+    {
+        if (SortColumn == column)
+        {
+            SortDirection = SortDirection == "ascending" ? "descending" : "ascending";
+        }
+        else
+        {
+            SortColumn = column;
+            SortDirection = "ascending";
+        }
+        SortTodos();
+    }
+    private void SortTodos()
+    {
+        SortedTodos = Todos.ToArray();
+        if (SortColumn != null)
+        {
+            var comparer = GetComparer(SortColumn, SortDirection);
+            if (comparer != null)
+            {
+                Array.Sort(SortedTodos, comparer);
+            }
+        }
+    }
+
+    private Comparison<TodoItem> GetComparer(string column, string direction)
+    {
+        switch (column)
+        {
+            case "Title":
+                return (item1, item2) => string.Compare(item1.Title, item2.Title) * (direction == "ascending" ? 1 : -1);
+            case "Description":
+                return (item1, item2) => string.Compare(item1.Description, item2.Description) * (direction == "ascending" ? 1 : -1);
+            case "Is Done":
+                return (item1, item2) => item1.IsDone.CompareTo(item2.IsDone) * (direction == "ascending" ? 1 : -1);
+            case "Added Time":
+                return (item1, item2) => item1.AddedTime.CompareTo(item2.AddedTime) * (direction == "ascending" ? 1 : -1);
+            case "Completion Time":
+                return (item1, item2) => Nullable.Compare(item1.CompletionTime, item2.CompletionTime) * (direction == "ascending" ? 1 : -1);
+            default:
+                return null;
+        }
+    }
+
+
+    private void ShowAddTodoForm()
+    {
+        showAddTodo = true;
+    }
+
+    private void HideAddTodoForm()
+    {
+        showAddTodo = false;
+    }
+    private async Task RefreshData()
+    {
+        Todos = await client.GetFromJsonAsync<TodoItem[]>("api/TodoItem");
+        SortTodos();
+    }
+
+    private async Task AddTodoHandler((string title, string description) todo)
+    {
+        if (AddTodoCallback != null)
+        {
+            await AddTodoCallback(todo);
+        }
+    }
+
+    private async Task DeleteHandler(int todoId)
+    {
+        if (DeleteTodoCallback != null)
+        {
+            await DeleteTodoCallback(todoId);
+        }
+    }
+
+    private async Task ToggleCompletionHandler(TodoItem item)
+    {
+        if (ToggleCompletionCallback != null)
+        {
+            await ToggleCompletionCallback(item);
+        }
+    }
+
+}

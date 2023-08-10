@@ -1,0 +1,37 @@
+﻿<th scope="col" @onclick="OnSort">@ChildContent</th>
+
+@code {
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+
+    [Parameter]
+    public string Column { get; set; }
+
+    [Parameter]
+    public string SortColumn { get; set; }
+
+    [Parameter]
+    public string SortDirection { get; set; }
+
+    [Parameter]
+    public EventCallback<string> SortColumnChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<string> SortDirectionChanged { get; set; }
+
+    private void OnSort()
+    {
+        if (SortColumn == Column)
+        {
+            SortDirection = SortDirection == "ascending" ? "descending" : "ascending";
+        }
+        else
+        {
+            SortColumn = Column;
+            SortDirection = "ascending";
+        }
+
+        SortColumnChanged.InvokeAsync(SortColumn);
+        SortDirectionChanged.InvokeAsync(SortDirection);
+    }
+}
