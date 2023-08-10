@@ -41,22 +41,9 @@
         }
     </tbody>
 </table>
-@if (!showAddTodo)
-{
-    <div class="text-right">
-        <button class="btn btn-success" @onclick="ShowAddTodoForm" style="background-color: #46a546; border-color: #46a546;">
-            Add todo
-        </button>
-    </div>
-}
-else
-{
-    <AddTodoForm OnAddTodo="AddTodoHandler" OnFormSubmitted="HideAddTodoForm" />
-}
 
 @code {
-    string newTodo;
-    string newTodoDescription;
+
     bool showAddTodo = false;
     private string sortColumn = "";
     [Parameter]
@@ -146,16 +133,6 @@ else
         }
     }
 
-
-    private void ShowAddTodoForm()
-    {
-        showAddTodo = true;
-    }
-
-    private void HideAddTodoForm()
-    {
-        showAddTodo = false;
-    }
     private async Task RefreshData()
     {
         Todos = await client.GetFromJsonAsync<TodoItem[]>("api/TodoItem");

@@ -25,15 +25,25 @@ else
     </SortableTable>
 
 }
-
-
+@if (!showAddTodo)
+{
+    <div class="text-right">
+        <button class="btn btn-success" @onclick="ShowAddTodoForm" style="background-color: #46a546; border-color: #46a546;">
+            Add todo
+        </button>
+    </div>
+}
+else
+{
+    <AddTodoForm OnAddTodo="AddTodoHandler" OnFormSubmitted="HideAddTodoForm" />
+}
 
 @code {
     TodoItem[] todos { get; set; }
-    string sortColumn = ""; // Замените на поле, по которому хотите сортировать по умолчанию
-    string sortDirection = "ascending"; // Замените на "descending" для сортировки по убыванию
+    string sortColumn = "";
+    string sortDirection = "ascending"; 
 
-    bool showAddTodo = true;
+    bool showAddTodo = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -76,6 +86,15 @@ else
         await client.PutAsJsonAsync($"api/TodoItem/{item.Id}", item);
         await RefreshData();
         StateHasChanged();
+    }
+    private void ShowAddTodoForm()
+    {
+        showAddTodo = true;
+    }
+
+    private void HideAddTodoForm()
+    {
+        showAddTodo = false;
     }
     string[] customColumnHeaders = new string[] { "Title", "Description", "Is Done", "Added Time", "Completion Time", "" };
 
