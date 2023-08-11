@@ -1,4 +1,17 @@
-﻿<th scope="col" @onclick="OnSort">@ChildContent</th>
+﻿<th scope="col" @onclick="() => OnSort(Column)">
+    @ChildContent
+    @if (SortColumn == Column && CurrentSortingColumn == Column)
+    {
+        @if (SortDirection == "ascending")
+        {
+            <span class="oi oi-arrow-top" style="margin-left: 5px;"></span>
+        }
+        else
+        {
+            <span class="oi oi-arrow-bottom" style="margin-left: 5px;"></span>
+        }
+    }
+</th>
 
 @code {
     [Parameter]
@@ -14,24 +27,33 @@
     public string SortDirection { get; set; }
 
     [Parameter]
+    public string CurrentSortingColumn { get; set; } = null;
+
+    [Parameter]
     public EventCallback<string> SortColumnChanged { get; set; }
 
     [Parameter]
     public EventCallback<string> SortDirectionChanged { get; set; }
 
-    private void OnSort()
+    private void OnSort(string column)
     {
-        if (SortColumn == Column)
+        if (SortColumn == column)
         {
             SortDirection = SortDirection == "ascending" ? "descending" : "ascending";
         }
         else
         {
-            SortColumn = Column;
+            SortColumn = column;
             SortDirection = "ascending";
         }
 
         SortColumnChanged.InvokeAsync(SortColumn);
         SortDirectionChanged.InvokeAsync(SortDirection);
+
+        
+        if (SortColumn == column)
+        {
+            CurrentSortingColumn = column;
+        }
     }
 }
