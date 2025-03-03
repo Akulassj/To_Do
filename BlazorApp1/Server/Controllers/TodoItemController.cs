@@ -17,7 +17,7 @@ namespace BlazorApp1.Server.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Get()
+        public async Task<IActionResult> Get() //test
         {
             var todos = await _context.TodoItems.ToListAsync();
             return Ok(todos);
